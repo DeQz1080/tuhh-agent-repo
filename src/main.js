@@ -1,67 +1,51 @@
 // src/main.js
 
-// 1. Navigation
+// 1. CSS IMPORTIEREN (wird von Vite automatisch gebundelt)
+import './style.css';
+
+// 2. Navigation
 import { setupNavbar } from './components/navbar.js';
 
 setupNavbar();
 
-// 3. Daten laden (async mit fetch statt import für GitHub Pages Kompatibilität)
+// 3. Daten laden (direkter Import - Vite bundelt JSON automatisch)
+import syntheticAgentsData from '../data/agents_synthetic_baseline.json';
+import humanMirrorAgentsData from '../data/agents_human_mirror.json';
+
+// Daten sofort verarbeiten
 let AGENTS = [];
 
-async function loadAgents() {
+function loadAgents() {
     try {
-        console.log("🔄 Starte Laden der Agenten-Daten...");
-        
-        // JSON-Dateien aus public Ordner laden (werden beim Build nach dist kopiert)
-        const [syntheticResponse, humanMirrorResponse] = await Promise.all([
-            fetch('./agents_synthetic_baseline.json'),
-            fetch('./agents_human_mirror.json')
-        ]);
-        
-        console.log("📡 Response Status:", {
-            synthetic: syntheticResponse.status,
-            humanMirror: humanMirrorResponse.status
-        });
-        
-        if (!syntheticResponse.ok) {
-            console.error('❌ Fehler beim Laden von agents_synthetic_baseline.json:', syntheticResponse.status, syntheticResponse.statusText);
-            throw new Error(`Fehler beim Laden von synthetic: ${syntheticResponse.status}`);
-        }
-        
-        if (!humanMirrorResponse.ok) {
-            console.error('❌ Fehler beim Laden von agents_human_mirror.json:', humanMirrorResponse.status, humanMirrorResponse.statusText);
-            throw new Error(`Fehler beim Laden von humanMirror: ${humanMirrorResponse.status}`);
-        }
-        
-        const syntheticAgents = await syntheticResponse.json();
-        const humanMirrorAgents = await humanMirrorResponse.json();
-        
-        // --- DEBUGGING START (Schau in die F12 Konsole!) ---
-        console.log("✅ Daten geladen:");
-        console.log("  - Synthetische Agenten:", syntheticAgents?.length || 0);
-        console.log("  - Human Mirror Agenten:", humanMirrorAgents?.length || 0);
-        // --- DEBUGGING ENDE ---
+        console.log("🔄 Verarbeite Agenten-Daten...");
         
         // Sicherheits-Check: Sind es Arrays? Wenn nein, mach ein leeres Array draus.
-        const set1 = Array.isArray(syntheticAgents) ? syntheticAgents : [];
-        const set2 = Array.isArray(humanMirrorAgents) ? humanMirrorAgents : [];
+        const set1 = Array.isArray(syntheticAgentsData) ? syntheticAgentsData : [];
+        const set2 = Array.isArray(humanMirrorAgentsData) ? humanMirrorAgentsData : [];
         
         // Falls humanMirrorAgents ein verschachteltes Array ist, flatten
         const flatSet2 = Array.isArray(set2[0]) ? set2.flat() : set2;
         
         AGENTS = [...set1, ...flatSet2];
+        
+        console.log("✅ Daten geladen:");
+        console.log("  - Synthetische Agenten:", set1.length);
+        console.log("  - Human Mirror Agenten:", flatSet2.length);
         console.log("📊 Gesamtanzahl geladener Agenten:", AGENTS.length);
         
         // Initialisiere die App nach dem Laden der Daten
         console.log("🚀 Initialisiere App...");
         initApp();
     } catch (error) {
-        console.error('❌ Fehler beim Laden der Agenten-Daten:', error);
+        console.error('❌ Fehler beim Verarbeiten der Agenten-Daten:', error);
         console.error('Stack:', error.stack);
         AGENTS = [];
         initApp(); // Trotzdem initialisieren, auch wenn keine Daten geladen wurden
     }
 }
+
+// Daten sofort laden
+loadAgents();
 
 // ===================================================================
 // UTILITIES (Helfer-Funktionen)
@@ -363,5 +347,4 @@ function initApp() {
     }
 }
 
-// Starte das Laden der Daten
-loadAgents();
+// Daten werden bereits beim Import geladen
