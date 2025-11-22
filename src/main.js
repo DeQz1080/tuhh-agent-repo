@@ -1,50 +1,67 @@
 // src/main.js
 
-// 1. CSS IMPORTIEREN (wird von Vite automatisch gebundelt)
-import './style.css';
-
-// 2. Navigation
+// 1. Navigation
 import { setupNavbar } from './components/navbar.js';
 
 setupNavbar();
 
-// 3. Daten laden (direkter Import - Vite bundelt JSON automatisch)
-import syntheticAgentsData from '../data/agents_synthetic_baseline.json';
-import humanMirrorAgentsData from '../data/agents_human_mirror.json';
-
-// Daten sofort verarbeiten
+// 2. Daten laden (async mit fetch - funktioniert auf GitHub Pages)
 let AGENTS = [];
 
-function loadAgents() {
+async function loadAgents() {
     try {
-        console.log("🔄 Verarbeite Agenten-Daten...");
+        console.log("🔄 Starte Laden der Agenten-Daten...");
+        
+        // JSON-Dateien aus public Ordner laden (werden beim Build nach dist kopiert)
+        const [syntheticResponse, humanMirrorResponse] = await Promise.all([
+            fetch('./agents_synthetic_baseline.json'),
+            fetch('./agents_human_mirror.json')
+        ]);
+        
+        console.log("📡 Response Status:", {
+            synthetic: syntheticResponse.status,
+            humanMirror: humanMirrorResponse.status
+        });
+        
+        if (!syntheticResponse.ok) {
+            console.error('❌ Fehler beim Laden von agents_synthetic_baseline.json:', syntheticResponse.status, syntheticResponse.statusText);
+            throw new Error(`Fehler beim Laden von synthetic: ${syntheticResponse.status}`);
+        }
+        
+        if (!humanMirrorResponse.ok) {
+            console.error('❌ Fehler beim Laden von agents_human_mirror.json:', humanMirrorResponse.status, humanMirrorResponse.statusText);
+            throw new Error(`Fehler beim Laden von humanMirror: ${humanMirrorResponse.status}`);
+        }
+        
+        const syntheticAgents = await syntheticResponse.json();
+        const humanMirrorAgents = await humanMirrorResponse.json();
+        
+        console.log("✅ Daten geladen:");
+        console.log("  - Synthetische Agenten:", syntheticAgents?.length || 0);
+        console.log("  - Human Mirror Agenten:", humanMirrorAgents?.length || 0);
         
         // Sicherheits-Check: Sind es Arrays? Wenn nein, mach ein leeres Array draus.
-        const set1 = Array.isArray(syntheticAgentsData) ? syntheticAgentsData : [];
-        const set2 = Array.isArray(humanMirrorAgentsData) ? humanMirrorAgentsData : [];
+        const set1 = Array.isArray(syntheticAgents) ? syntheticAgents : [];
+        const set2 = Array.isArray(humanMirrorAgents) ? humanMirrorAgents : [];
         
         // Falls humanMirrorAgents ein verschachteltes Array ist, flatten
         const flatSet2 = Array.isArray(set2[0]) ? set2.flat() : set2;
         
         AGENTS = [...set1, ...flatSet2];
-        
-        console.log("✅ Daten geladen:");
-        console.log("  - Synthetische Agenten:", set1.length);
-        console.log("  - Human Mirror Agenten:", flatSet2.length);
         console.log("📊 Gesamtanzahl geladener Agenten:", AGENTS.length);
         
         // Initialisiere die App nach dem Laden der Daten
         console.log("🚀 Initialisiere App...");
         initApp();
     } catch (error) {
-        console.error('❌ Fehler beim Verarbeiten der Agenten-Daten:', error);
+        console.error('❌ Fehler beim Laden der Agenten-Daten:', error);
         console.error('Stack:', error.stack);
         AGENTS = [];
         initApp(); // Trotzdem initialisieren, auch wenn keine Daten geladen wurden
     }
 }
 
-// Daten sofort laden
+// Starte das Laden der Daten
 loadAgents();
 
 // ===================================================================
@@ -261,47 +278,58 @@ function drawChartSafe() {
         ctx.stroke();
     }
 
-// Event-Listener Setup (wird einmal beim Laden aufgerufen)
-const cardsContainer = qs('#cards');
+// Event-Listener Setup (wird in initApp() aufgerufen, nachdem DOM bereit ist)
+function setupEventListeners() {
+    const cardsContainer = qs('#cards');
+    if (!cardsContainer) return;
 
-if (cardsContainer) {
     // --- LISTENERS (Nur wenn Elemente existieren) ---
-
     const searchInput = qs('#search');
     if(searchInput) {
-        searchInput.addEventListener('input', e => {
+        // Entferne alte Listener falls vorhanden
+        searchInput.removeEventListener('input', searchInput._inputHandler);
+        searchInput._inputHandler = (e) => {
             searchTerm = e.target.value.trim();
             render();
-            drawChartSafe(); // Chart neu zeichnen wenn gefiltert wird
-        });
+            drawChartSafe();
+        };
+        searchInput.addEventListener('input', searchInput._inputHandler);
     }
 
+    // Chip-Listener (können mehrfach sein, also alle entfernen und neu setzen)
     qsa('.chip').forEach(ch=>{
-      ch.addEventListener('click', ()=>{
-        qsa('.chip').forEach(x=>x.classList.remove('active'));
-        ch.classList.add('active');
-        activeTag = ch.dataset.tag;
-        render();
-        drawChartSafe();
-      });
+        ch.removeEventListener('click', ch._chipHandler);
+        ch._chipHandler = () => {
+            qsa('.chip').forEach(x=>x.classList.remove('active'));
+            ch.classList.add('active');
+            activeTag = ch.dataset.tag;
+            render();
+            drawChartSafe();
+        };
+        ch.addEventListener('click', ch._chipHandler);
     });
 
     const exportBtn = qs('#exportVisible');
     if(exportBtn) {
-        exportBtn.addEventListener('click', ()=>{
-          const visible = AGENTS.filter(matches);
-          downloadObject({date: new Date(), agents: visible}, 'agents_export.json');
-        });
+        exportBtn.removeEventListener('click', exportBtn._exportHandler);
+        exportBtn._exportHandler = () => {
+            const visible = AGENTS.filter(matches);
+            downloadObject({date: new Date(), agents: visible}, 'agents_export.json');
+        };
+        exportBtn.addEventListener('click', exportBtn._exportHandler);
     }
 
     // Chart Initialisierung
     const chartCanvas = qs('#chart');
     if(chartCanvas) {
         const refreshBtn = qs('#refreshChart');
-        if(refreshBtn) refreshBtn.addEventListener('click', () => {
-            // Hier könnte man Noise hinzufügen, wir zeichnen einfach neu
-            drawChartSafe();
-        });
+        if(refreshBtn) {
+            refreshBtn.removeEventListener('click', refreshBtn._refreshHandler);
+            refreshBtn._refreshHandler = () => {
+                drawChartSafe();
+            };
+            refreshBtn.addEventListener('click', refreshBtn._refreshHandler);
+        }
     }
 }
 
@@ -332,6 +360,10 @@ function initApp() {
     
     if (cardsContainer) {
         console.log("✅ cardsContainer gefunden");
+        
+        // Event-Listener zuerst setzen (damit sie beim Rendern verfügbar sind)
+        setupEventListeners();
+        
         if (AGENTS.length > 0) {
             console.log("🎨 Rendere Agenten...");
             // Initiales Rendern aufrufen
@@ -346,5 +378,3 @@ function initApp() {
         console.warn("⚠️ cardsContainer nicht gefunden - möglicherweise nicht auf der Hauptseite");
     }
 }
-
-// Daten werden bereits beim Import geladen
