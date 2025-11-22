@@ -98,28 +98,26 @@ function escapeHtml(s){
 // 3. LOGIK FÜR DIE HAUPTSEITE (REPOSITORY LISTE)
 // WICHTIG: Wir prüfen erst, ob der Container '#cards' existiert!
 // ===================================================================
-const cardsContainer = qs('#cards');
 
-if (cardsContainer) {
-    // --- AB HIER NUR CODE, DER AUF DER STARTSEITE LÄUFT ---
+let activeTag = "all";
+let searchTerm = "";
 
-    let activeTag = "all";
-    let searchTerm = "";
+// Filter-Logik
+function matches(agent){
+  // Suchstring zusammenbauen aus allen relevanten Feldern
+  const tagString = agent.tags ? agent.tags.join(" ") : "";
+  const hay = (agent.id+" "+agent.title+" "+(agent.personality||'')+" "+(agent.task||'')+" "+(agent.origin||'')+" "+tagString).toLowerCase();
+  
+  const searchOk = hay.includes(searchTerm.toLowerCase());
+  const tagOk = (activeTag==="all") || (agent.tags && agent.tags.includes(activeTag));
+  
+  return searchOk && tagOk;
+}
 
-    // Filter-Logik
-    function matches(agent){
-      // Suchstring zusammenbauen aus allen relevanten Feldern
-      const tagString = agent.tags ? agent.tags.join(" ") : "";
-      const hay = (agent.id+" "+agent.title+" "+(agent.personality||'')+" "+(agent.task||'')+" "+(agent.origin||'')+" "+tagString).toLowerCase();
-      
-      const searchOk = hay.includes(searchTerm.toLowerCase());
-      const tagOk = (activeTag==="all") || (agent.tags && agent.tags.includes(activeTag));
-      
-      return searchOk && tagOk;
-    }
-
-    // Rendering-Funktion
-    function render(){
+// Rendering-Funktion
+function render(){
+  const cardsContainer = qs('#cards');
+  if (!cardsContainer) return;
       cardsContainer.innerHTML = "";
       const visible = AGENTS.filter(matches);
       
@@ -217,44 +215,12 @@ if (cardsContainer) {
       });
     }
 
-    // Initiales Rendern wird in initApp() aufgerufen, nachdem Daten geladen wurden
 
-
-    // --- LISTENERS (Nur wenn Elemente existieren) ---
-
-    const searchInput = qs('#search');
-    if(searchInput) {
-        searchInput.addEventListener('input', e => {
-            searchTerm = e.target.value.trim();
-            render();
-            drawChartSafe(); // Chart neu zeichnen wenn gefiltert wird
-        });
-    }
-
-    qsa('.chip').forEach(ch=>{
-      ch.addEventListener('click', ()=>{
-        qsa('.chip').forEach(x=>x.classList.remove('active'));
-        ch.classList.add('active');
-        activeTag = ch.dataset.tag;
-        render();
-        drawChartSafe();
-      });
-    });
-
-    const exportBtn = qs('#exportVisible');
-    if(exportBtn) {
-        exportBtn.addEventListener('click', ()=>{
-          const visible = AGENTS.filter(matches);
-          downloadObject({date: new Date(), agents: visible}, 'agents_export.json');
-        });
-    }
-
-    // --- CHART LOGIK ---
+// --- CHART LOGIK ---
+// Wrapper-Funktion, damit wir sie überall aufrufen können
+function drawChartSafe() {
     const chartCanvas = qs('#chart');
-    
-    // Wrapper-Funktion, damit wir sie überall aufrufen können
-    function drawChartSafe() {
-        if(!chartCanvas) return; // Abbrechen wenn kein Canvas da ist
+    if(!chartCanvas) return; // Abbrechen wenn kein Canvas da ist
         
         const ctx = chartCanvas.getContext('2d');
         // Canvas Größe anpassen
@@ -300,18 +266,49 @@ if (cardsContainer) {
         ctx.stroke();
     }
 
-    // Chart Initialisierung
-    if(chartCanvas) {
+// Event-Listener Setup (wird einmal beim Laden aufgerufen)
+const cardsContainer = qs('#cards');
+
+if (cardsContainer) {
+    // --- LISTENERS (Nur wenn Elemente existieren) ---
+
+    const searchInput = qs('#search');
+    if(searchInput) {
+        searchInput.addEventListener('input', e => {
+            searchTerm = e.target.value.trim();
+            render();
+            drawChartSafe(); // Chart neu zeichnen wenn gefiltert wird
+        });
+    }
+
+    qsa('.chip').forEach(ch=>{
+      ch.addEventListener('click', ()=>{
+        qsa('.chip').forEach(x=>x.classList.remove('active'));
+        ch.classList.add('active');
+        activeTag = ch.dataset.tag;
+        render();
         drawChartSafe();
-        
+      });
+    });
+
+    const exportBtn = qs('#exportVisible');
+    if(exportBtn) {
+        exportBtn.addEventListener('click', ()=>{
+          const visible = AGENTS.filter(matches);
+          downloadObject({date: new Date(), agents: visible}, 'agents_export.json');
+        });
+    }
+
+    // Chart Initialisierung
+    const chartCanvas = qs('#chart');
+    if(chartCanvas) {
         const refreshBtn = qs('#refreshChart');
         if(refreshBtn) refreshBtn.addEventListener('click', () => {
             // Hier könnte man Noise hinzufügen, wir zeichnen einfach neu
             drawChartSafe();
         });
     }
-
-} // --- ENDE IF cardsContainer ---
+}
 
 
 // ===================================================================
