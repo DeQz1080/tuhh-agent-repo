@@ -14,8 +14,8 @@ export default defineConfig({
         projects: resolve(__dirname, 'projects.html'),
         resources: resolve(__dirname, 'resources.html'),
       },
-      assetsDir: 'assets',
     },
+    assetsDir: 'assets',
     outDir: 'dist',
   },
 });

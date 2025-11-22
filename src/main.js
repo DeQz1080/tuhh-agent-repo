@@ -6,29 +6,54 @@ import './style.css';
 // 2. Navigation
 import { setupNavbar } from './components/navbar.js';
 
-// 3. Daten laden
-import syntheticAgents from '../data/agents_synthetic_baseline.json';
-import humanMirrorAgents from '../data/agents_human_mirror.json';
-
-// --- DEBUGGING START (Schau in die F12 Konsole!) ---
-console.log("--------------------------------");
-console.log("DEBUG: Start Main.js");
-console.log("Synthetische Daten:", syntheticAgents);
-console.log("Human Mirror Daten:", humanMirrorAgents);
-// --- DEBUGGING ENDE ---
-
 setupNavbar();
 
-// Sicherheits-Check: Sind es Arrays? Wenn nein, mach ein leeres Array draus.
-const set1 = Array.isArray(syntheticAgents) ? syntheticAgents : [];
-const set2 = Array.isArray(humanMirrorAgents) ? humanMirrorAgents : [];
+// 3. Daten laden (async mit fetch statt import für GitHub Pages Kompatibilität)
+let AGENTS = [];
 
-const AGENTS = [...set1, ...set2];
-console.log("Anzahl geladener Agenten:", AGENTS.length);
-
+async function loadAgents() {
+    try {
+        // JSON-Dateien aus public Ordner laden (werden beim Build nach dist kopiert)
+        const [syntheticResponse, humanMirrorResponse] = await Promise.all([
+            fetch('./agents_synthetic_baseline.json'),
+            fetch('./agents_human_mirror.json')
+        ]);
+        
+        if (!syntheticResponse.ok || !humanMirrorResponse.ok) {
+            throw new Error('Fehler beim Laden der JSON-Dateien');
+        }
+        
+        const syntheticAgents = await syntheticResponse.json();
+        const humanMirrorAgents = await humanMirrorResponse.json();
+        
+        // --- DEBUGGING START (Schau in die F12 Konsole!) ---
+        console.log("--------------------------------");
+        console.log("DEBUG: Start Main.js");
+        console.log("Synthetische Daten:", syntheticAgents);
+        console.log("Human Mirror Daten:", humanMirrorAgents);
+        // --- DEBUGGING ENDE ---
+        
+        // Sicherheits-Check: Sind es Arrays? Wenn nein, mach ein leeres Array draus.
+        const set1 = Array.isArray(syntheticAgents) ? syntheticAgents : [];
+        const set2 = Array.isArray(humanMirrorAgents) ? humanMirrorAgents : [];
+        
+        // Falls humanMirrorAgents ein verschachteltes Array ist, flatten
+        const flatSet2 = Array.isArray(set2[0]) ? set2.flat() : set2;
+        
+        AGENTS = [...set1, ...flatSet2];
+        console.log("Anzahl geladener Agenten:", AGENTS.length);
+        
+        // Initialisiere die App nach dem Laden der Daten
+        initApp();
+    } catch (error) {
+        console.error('Fehler beim Laden der Agenten-Daten:', error);
+        AGENTS = [];
+        initApp(); // Trotzdem initialisieren, auch wenn keine Daten geladen wurden
+    }
+}
 
 // ===================================================================
-// 2. UTILITIES (Helfer-Funktionen)
+// UTILITIES (Helfer-Funktionen)
 // ===================================================================
 const qs = sel => document.querySelector(sel);
 const qsa = sel => Array.from(document.querySelectorAll(sel));
@@ -192,8 +217,7 @@ if (cardsContainer) {
       });
     }
 
-    // Initiales Rendern aufrufen
-    render();
+    // Initiales Rendern wird in initApp() aufgerufen, nachdem Daten geladen wurden
 
 
     // --- LISTENERS (Nur wenn Elemente existieren) ---
@@ -308,3 +332,21 @@ if(fbForm) {
         fbExport.addEventListener('click', () => toast("No feedback to export yet"));
     }
 }
+
+// App-Initialisierung (wird nach dem Laden der Daten aufgerufen)
+function initApp() {
+    const cardsContainer = qs('#cards');
+    
+    if (cardsContainer) {
+        if (AGENTS.length > 0) {
+            // Initiales Rendern aufrufen
+            render();
+            drawChartSafe();
+        } else {
+            cardsContainer.innerHTML = '<div style="padding:20px; color:#999; grid-column:1/-1; text-align:center">Keine Agenten-Daten gefunden.</div>';
+        }
+    }
+}
+
+// Starte das Laden der Daten
+loadAgents();
