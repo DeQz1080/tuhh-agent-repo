@@ -1,9 +1,6 @@
 // src/main.js
 
-// 1. CSS IMPORTIEREN (Das fixt das Design!)
-import './style.css';
-
-// 2. Navigation
+// 1. Navigation
 import { setupNavbar } from './components/navbar.js';
 
 setupNavbar();
@@ -13,24 +10,36 @@ let AGENTS = [];
 
 async function loadAgents() {
     try {
+        console.log("🔄 Starte Laden der Agenten-Daten...");
+        
         // JSON-Dateien aus public Ordner laden (werden beim Build nach dist kopiert)
         const [syntheticResponse, humanMirrorResponse] = await Promise.all([
             fetch('./agents_synthetic_baseline.json'),
             fetch('./agents_human_mirror.json')
         ]);
         
-        if (!syntheticResponse.ok || !humanMirrorResponse.ok) {
-            throw new Error('Fehler beim Laden der JSON-Dateien');
+        console.log("📡 Response Status:", {
+            synthetic: syntheticResponse.status,
+            humanMirror: humanMirrorResponse.status
+        });
+        
+        if (!syntheticResponse.ok) {
+            console.error('❌ Fehler beim Laden von agents_synthetic_baseline.json:', syntheticResponse.status, syntheticResponse.statusText);
+            throw new Error(`Fehler beim Laden von synthetic: ${syntheticResponse.status}`);
+        }
+        
+        if (!humanMirrorResponse.ok) {
+            console.error('❌ Fehler beim Laden von agents_human_mirror.json:', humanMirrorResponse.status, humanMirrorResponse.statusText);
+            throw new Error(`Fehler beim Laden von humanMirror: ${humanMirrorResponse.status}`);
         }
         
         const syntheticAgents = await syntheticResponse.json();
         const humanMirrorAgents = await humanMirrorResponse.json();
         
         // --- DEBUGGING START (Schau in die F12 Konsole!) ---
-        console.log("--------------------------------");
-        console.log("DEBUG: Start Main.js");
-        console.log("Synthetische Daten:", syntheticAgents);
-        console.log("Human Mirror Daten:", humanMirrorAgents);
+        console.log("✅ Daten geladen:");
+        console.log("  - Synthetische Agenten:", syntheticAgents?.length || 0);
+        console.log("  - Human Mirror Agenten:", humanMirrorAgents?.length || 0);
         // --- DEBUGGING ENDE ---
         
         // Sicherheits-Check: Sind es Arrays? Wenn nein, mach ein leeres Array draus.
@@ -41,12 +50,14 @@ async function loadAgents() {
         const flatSet2 = Array.isArray(set2[0]) ? set2.flat() : set2;
         
         AGENTS = [...set1, ...flatSet2];
-        console.log("Anzahl geladener Agenten:", AGENTS.length);
+        console.log("📊 Gesamtanzahl geladener Agenten:", AGENTS.length);
         
         // Initialisiere die App nach dem Laden der Daten
+        console.log("🚀 Initialisiere App...");
         initApp();
     } catch (error) {
-        console.error('Fehler beim Laden der Agenten-Daten:', error);
+        console.error('❌ Fehler beim Laden der Agenten-Daten:', error);
+        console.error('Stack:', error.stack);
         AGENTS = [];
         initApp(); // Trotzdem initialisieren, auch wenn keine Daten geladen wurden
     }
@@ -332,16 +343,23 @@ if(fbForm) {
 
 // App-Initialisierung (wird nach dem Laden der Daten aufgerufen)
 function initApp() {
+    console.log("🔧 initApp() aufgerufen, AGENTS.length:", AGENTS.length);
     const cardsContainer = qs('#cards');
     
     if (cardsContainer) {
+        console.log("✅ cardsContainer gefunden");
         if (AGENTS.length > 0) {
+            console.log("🎨 Rendere Agenten...");
             // Initiales Rendern aufrufen
             render();
             drawChartSafe();
+            console.log("✅ Rendering abgeschlossen");
         } else {
+            console.warn("⚠️ Keine Agenten-Daten vorhanden");
             cardsContainer.innerHTML = '<div style="padding:20px; color:#999; grid-column:1/-1; text-align:center">Keine Agenten-Daten gefunden.</div>';
         }
+    } else {
+        console.warn("⚠️ cardsContainer nicht gefunden - möglicherweise nicht auf der Hauptseite");
     }
 }
 

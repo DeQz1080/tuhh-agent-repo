@@ -14,9 +14,9 @@ export const NAV_HTML = `
             </div>
           </div>
           <nav>
-            <a href="/index.html" style="font-weight:600; color:#003B5C; margin-left:15px; text-decoration:none">Repository</a>
-            <a href="/projects.html" style="color:#00B5B0; margin-left:15px; text-decoration:none">Projects</a>
-            <a href="/resources.html" style="color:#00B5B0; margin-left:15px; text-decoration:none">Resources</a>
+            <a href="./index.html" style="font-weight:600; color:#003B5C; margin-left:15px; text-decoration:none">Repository</a>
+            <a href="./projects.html" style="color:#00B5B0; margin-left:15px; text-decoration:none">Projects</a>
+            <a href="./resources.html" style="color:#00B5B0; margin-left:15px; text-decoration:none">Resources</a>
           </nav>
         </div>
         <div class="toolbar">
