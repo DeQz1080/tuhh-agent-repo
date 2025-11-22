@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>TUHH Behavioral Agent Repository — MVP</title>
+    
+    <base href="./"> 
+     
+  <script type="module" crossorigin src="./assets/main-ke2F-Uwq.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/main-D9KQa9iP.css">
+</head>
+<body>
+    <main>
+        <section class="grid" id="cards">
+            <div style="padding:20px; color:#999; grid-column:1/-1; text-align:center">
+                Lade Agenten-Daten...
+            </div>
+        </section>
+
+        <aside>
+            <div class="panel">
+                <h3>Mini Analytics (Demo)</h3>
+                <div class="small">Average “honesty score” across visible agents.</div>
+                
+                <div class="chart"><canvas id="chart"></canvas></div>
+                
+                <div class="row" style="justify-content:space-between;margin-top:6px">
+                  <span class="small">Toy data • local render</span>
+                  <button class="btn" id="refreshChart" style="font-size:12px; padding:4px 8px">Reshuffle</button>
+                </div>
+        
+                <div class="divider"></div>
+                <h3>Export</h3>
+                <div class="small">Download visible agents as JSON bundle.</div>
+                <button class="btn dl" id="exportVisible" style="width:100%; margin-top:6px">Export visible agents</button>
+        
+                <div class="divider"></div>
+                
+                <h3>Feedback</h3>
+                <form id="feedbackForm">
+                  <textarea name="message" placeholder="Short note…" style="width:100%; min-height:60px; margin-bottom:8px"></textarea>
+                  <button class="btn" type="submit" style="width:100%">Save locally</button>
+                  <button class="btn dl" id="exportFeedback" type="button" style="width:100%; margin-top:4px">Export logs</button>
+                </form>
+                
+                <div class="divider"></div>
+                <h3>Research Context</h3>
+                <div class="small" style="margin-bottom:6px">TUHH Interaction Design</div>
+                <div class="context" style="display:grid; gap:8px">
+                    <div style="background:#F3FAFA; padding:8px; border-radius:6px; font-size:12px; color:#0E5D63; border:1px solid #CFEFED">
+                        <b>MVP Status:</b> Local Demo without Backend.
+                    </div>
+                </div>
+            </div>
+        </aside>
+    </main>
+
+    <div class="wrap">
+        <div class="card">
+            <div class="footer-note" style="padding:16px; font-size:13px; color:#64748B; text-align:center;">
+                Framing: <em>“A growing open-science platform for standardized behavioral agents — including prompts, examples,
+                and methodological guidelines for reproducible LLM-based experimentation.”</em>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast" class="toast" role="status" aria-live="polite">Copied to clipboard</div>
+
+</body>
+</html>
